@@ -47,8 +47,6 @@ struct Hand
 };
 
 // function prototypes
-vector<Hand> Part1(string filename);
-vector<Hand> Part2(string filename);
 vector<Hand> GetHands(string filename, bool joker);
 CardType GetCardType(char c);
 std::map<CardType, int> GetCardMap(CardType* cards);
@@ -60,7 +58,10 @@ void PrintHand(Hand hand);
 int main()
 {
     string filename = "TestFile2.txt";
-    auto hands = Part2(filename);
+    bool usingJoker = true; // for Part 1, set to false. Part 2, set to true
+
+    vector<Hand> hands = GetHands(filename, usingJoker);
+    sort(hands.begin(), hands.end(), CompareHands);
     
     // calculate the winnings
     int totalWinnings = 0;
@@ -76,21 +77,6 @@ int main()
 
     cout << "Total Winnings = " << totalWinnings << endl;
     return 0;
-}
-
-vector<Hand> Part1(string filename)
-{
-    vector<Hand> hands = GetHands(filename, false);
-    sort(hands.begin(), hands.end(), CompareHands); 
-    return hands;
-}
-
-// Joker replaced Jack
-vector<Hand> Part2(string filename)
-{
-    vector<Hand> hands = GetHands(filename, true);
-    sort(hands.begin(), hands.end(), CompareHands); // TODO: this will change ?
-    return hands;
 }
 
 vector<Hand> GetHands(string filename, bool joker)
