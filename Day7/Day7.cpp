@@ -57,7 +57,7 @@ void PrintHand(Hand hand);
 
 int main()
 {
-    string filename = "TestFile2.txt";
+    string filename = "PuzzleFile.txt";
     bool usingJoker = true; // for Part 1, set to false. Part 2, set to true
 
     vector<Hand> hands = GetHands(filename, usingJoker);
@@ -68,7 +68,7 @@ int main()
 
     for (int i = 0; i < hands.size(); i++)
     {
-        //PrintHand(hands[i]);
+        PrintHand(hands[i]);
         int rank = i + 1;
         int winnings = rank * hands[i].bid;
         //cout << hands[i].bid << " * " << rank << " = " << winnings << endl;
@@ -76,6 +76,8 @@ int main()
     }
 
     cout << "Total Winnings = " << totalWinnings << endl;
+    char c;
+    cin >> c;
     return 0;
 }
 
@@ -200,7 +202,7 @@ HandType GetHandTypeWithJoker(std::map<CardType, int> cardMap)
     // joker found so treat the card map differently
     int numJokers = search->second;
 
-    // from map, determine the hand type
+    // from map, determine the hand type based on number of unique card types
     if (cardMap.size() == 1) return HandType::FiveOfAKind; // jokers make up all 5
     if (cardMap.size() == 2) return HandType::FiveOfAKind; // jokers would mimic the other card type and make a full set of 5
     if (cardMap.size() == 3)
@@ -209,53 +211,20 @@ HandType GetHandTypeWithJoker(std::map<CardType, int> cardMap)
         auto it = cardMap.begin();
         while (it != cardMap.end()) 
         { 
-            if (it->second == 3) { // e.g. 23444
-                if (numJokers == 1) return HandType::FourOfAKind;
-                if (numJokers == 2) return HandType::FiveOfAKind;
-                if (numJokers == 3) return HandType::ThreeOfAKind; // the jokers make up the Three of a Kind
-                throw std::invalid_argument("Too many jokers when there's a three of a kind...");
-            } 
-            if (it->second == 2) { // e.g. 22344
+            if (it->second == 3) return HandType::FourOfAKind; 
+            if (it->second == 2) // e.g. 22344
+            { 
                 if (numJokers == 1) return HandType::FullHouse; // NOTE: the other two cards are of the same kind
                 if (numJokers == 2) return HandType::FourOfAKind;
-                throw std::invalid_argument("Too many jokers when there's a two of a kind...");
+                throw std::invalid_argument("Invalid number of jokers when there should be 3 unique numbers and at least one pair...");
             }
             it++;    
             // NOTE: ignoring a value of 1 because it doesn't help us determine which Hand Type it is
         } 
         throw std::invalid_argument("Somehow there are 3 types but it's not Three of a Kind or Two Pair...");
     }
-    if (cardMap.size() == 4) //e.g. 23455
-    {
-        if (numJokers == 1) return HandType::ThreeOfAKind; 
-        if (numJokers == 2) 
-        {
-            // could be FourOfAKind or OnePair
-            auto it = cardMap.begin();
-            while (it != cardMap.end()) 
-            { 
-                if (it->first != CardType::J
-                    && it->second == 2)
-                {
-                    // another pair found so the jokers will make a four of a kind
-                    HandType::FourOfAKind;
-                }
-                it++; 
-            }
-            // another pair not found so the Joker is the one pair
-            return HandType::OnePair;
-        } 
-        if (numJokers == 3) return HandType::FiveOfAKind;
-        throw std::invalid_argument("Too many jokers when there's 4 unique card types...");
-    };
-    if (cardMap.size() == 5) // e.g. 23456
-    {
-        if (numJokers == 1) return HandType::OnePair; 
-        if (numJokers == 2) return HandType::ThreeOfAKind;
-        if (numJokers == 3) return HandType::FourOfAKind;
-        if (numJokers == 3) return HandType::FiveOfAKind;
-        throw std::invalid_argument("Too many jokers when there's 5 unique card types...");
-    };
+    if (cardMap.size() == 4) return HandType::ThreeOfAKind; //e.g. 23455
+    if (cardMap.size() == 5) return HandType::OnePair; // e.g. 23456
     throw std::invalid_argument("cards do not correspond to an expected hand type");
 }
 
@@ -284,14 +253,23 @@ bool CompareHands(Hand hand1, Hand hand2)
 // debug methods
 void PrintHand(Hand hand)
 {
-    cout << "Cards in Hand: ";
+    bool hasJ = true;
     for (int i = 0; i < kNumCardsInHand; i++)
     {
-        std::cout << hand.cards[i] << " ";
+        if(hand.cards[i] == CardType::J) hasJ = true;
     }
-    cout << endl;
+    
+    if (hasJ)
+    {
+        cout << "Cards in Hand: ";
+        for (int i = 0; i < kNumCardsInHand; i++)
+        {
+            std::cout << hand.cards[i] << " ";
+        }
+        cout << endl;
 
-    cout << "Hand Type: " << hand.handType << endl;
-    cout << "Bid: " << hand.bid << endl;
-    cout << endl;
+        cout << "Hand Type: " << hand.handType << endl;
+        cout << "Bid: " << hand.bid << endl;
+        cout << endl;
+    }
 }
