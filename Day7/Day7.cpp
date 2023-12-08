@@ -47,6 +47,8 @@ struct Hand
 };
 
 // function prototypes
+vector<Hand> Part1(string filename);
+vector<Hand> Part2(string filename);
 vector<Hand> GetHands(string filename);
 CardType GetCardType(char c);
 HandType GetHandType(CardType* cards, int numCards);
@@ -56,10 +58,8 @@ void PrintHand(Hand hand);
 int main()
 {
     string filename = "PuzzleFile.txt";
-    vector<Hand> hands = GetHands(filename);
     
-    // sort the hands in order
-    sort(hands.begin(), hands.end(), CompareHands); 
+    auto hands = Part1(filename);
     
     // calculate the winnings
     int totalWinnings = 0;
@@ -76,6 +76,21 @@ int main()
 
     cout << "Total Winnings = " << totalWinnings << endl;
     return 0;
+}
+
+vector<Hand> Part1(string filename)
+{
+    vector<Hand> hands = GetHands(filename);
+    sort(hands.begin(), hands.end(), CompareHands); 
+    return hands;
+}
+
+// J can pretend to be other cards for advantageous purposes
+vector<Hand> Part2(string filename)
+{
+    vector<Hand> hands = GetHands(filename); // TODO: this will change
+    sort(hands.begin(), hands.end(), CompareHands); // TODO: this will change
+    return hands;
 }
 
 vector<Hand> GetHands(string filename)
