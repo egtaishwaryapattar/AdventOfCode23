@@ -22,6 +22,7 @@ enum HandType
 
 enum CardType : int
 {
+    Joker = 0,
     Two = 2,
     Three,
     Four,
@@ -53,6 +54,7 @@ std::map<CardType, int> GetCardMap(CardType* cards);
 HandType GetHandType(std::map<CardType, int> cardMap);
 HandType GetHandTypeWithJoker(std::map<CardType, int> cardMap);
 bool CompareHands(Hand hand1, Hand hand2);
+bool CompareHandsWithJoker(Hand hand1, Hand hand2);
 void PrintHand(Hand hand);
 
 int main()
@@ -61,7 +63,15 @@ int main()
     bool usingJoker = true; // for Part 1, set to false. Part 2, set to true
 
     vector<Hand> hands = GetHands(filename, usingJoker);
-    sort(hands.begin(), hands.end(), CompareHands);
+
+    if (usingJoker)
+    {
+        sort(hands.begin(), hands.end(), CompareHandsWithJoker);
+    }
+    else
+    { 
+        sort(hands.begin(), hands.end(), CompareHands);
+    }
     
     // calculate the winnings
     int totalWinnings = 0;
@@ -211,7 +221,7 @@ HandType GetHandTypeWithJoker(std::map<CardType, int> cardMap)
         auto it = cardMap.begin();
         while (it != cardMap.end()) 
         { 
-            if (it->second == 3) return HandType::FourOfAKind; 
+            if (it->second == 3) return HandType::FourOfAKind; // e.g. 23444
             if (it->second == 2) // e.g. 22344
             { 
                 if (numJokers == 1) return HandType::FullHouse; // NOTE: the other two cards are of the same kind
@@ -242,6 +252,34 @@ bool CompareHands(Hand hand1, Hand hand2)
         if (hand1.cards[i] != hand2.cards[i])
         {
             return hand1.cards[i] < hand2.cards[i];
+        }
+    }
+
+    // if we have got through the whole for loop without returning, the cards are identical 
+    // return false as this comparator is a "less than" comparator
+    return false;
+}
+
+bool CompareHandsWithJoker(Hand hand1, Hand hand2)
+{
+    if (hand1.handType != hand2.handType)
+    {
+        return hand1.handType < hand2.handType;
+    }
+
+    // if hand types are the same, sort by card Types
+    for (int i = 0; i < kNumCardsInHand; i++)
+    {
+        CardType card1 = hand1.cards[i];
+        CardType card2 = hand2.cards[i];
+        
+        // reassign J to a Joker to make it the weakest value
+        if (card1 == CardType::J) card1 = CardType::Joker;
+        if (card2 == CardType::J) card2 = CardType::Joker;
+        
+        if (card1 != card2)
+        {
+            return card1 < card2;
         }
     }
 
