@@ -49,9 +49,10 @@ struct Hand
 // function prototypes
 vector<Hand> Part1(string filename);
 vector<Hand> Part2(string filename);
-vector<Hand> GetHands(string filename);
+vector<Hand> GetHands(string filename, bool specialJ);
 CardType GetCardType(char c);
-HandType GetHandType(CardType* cards, int numCards);
+std::map<CardType, int> GetCardMap(CardType* cards);
+HandType GetHandType(std::map<CardType, int> cardMap);
 bool CompareHands(Hand hand1, Hand hand2);
 void PrintHand(Hand hand);
 
@@ -80,7 +81,7 @@ int main()
 
 vector<Hand> Part1(string filename)
 {
-    vector<Hand> hands = GetHands(filename);
+    vector<Hand> hands = GetHands(filename, false);
     sort(hands.begin(), hands.end(), CompareHands); 
     return hands;
 }
@@ -88,12 +89,12 @@ vector<Hand> Part1(string filename)
 // J can pretend to be other cards for advantageous purposes
 vector<Hand> Part2(string filename)
 {
-    vector<Hand> hands = GetHands(filename); // TODO: this will change
+    vector<Hand> hands = GetHands(filename, true); // TODO: this will change
     sort(hands.begin(), hands.end(), CompareHands); // TODO: this will change
     return hands;
 }
 
-vector<Hand> GetHands(string filename)
+vector<Hand> GetHands(string filename, bool specialJ)
 {
     std::ifstream file(filename);
     vector<Hand> hands;
@@ -118,7 +119,10 @@ vector<Hand> GetHands(string filename)
         {
             hand.cards[i] = GetCardType(cardsAsString[i]);
         }
-        hand.handType = GetHandType(hand.cards, kNumCardsInHand);
+ 
+        // sort cards into a map with number of cards for each card type
+        std::map<CardType, int> cardMap = GetCardMap(hand.cards);
+        hand.handType = GetHandType(cardMap);
         
         // add to vector
         hands.push_back(hand);
@@ -146,11 +150,10 @@ CardType GetCardType(char c)
     throw std::invalid_argument("card is not an expected card type");
 }
 
-HandType GetHandType(CardType* cards, int numCards)
+std::map<CardType, int> GetCardMap(CardType* cards)
 {
-    // sort cards into a map with number of cards for each card type
     std::map<CardType, int> cardMap;
-    for (int i = 0; i < numCards; i++)
+    for (int i = 0; i < kNumCardsInHand; i++)
     {
         CardType card = cards[i];
         auto search = cardMap.find(card);
@@ -166,7 +169,11 @@ HandType GetHandType(CardType* cards, int numCards)
             cardMap[card] = 1;
         }
     }
+    return cardMap;
+}
 
+HandType GetHandType(std::map<CardType, int> cardMap)
+{
     // from map, determine the hand type
     if (cardMap.size() == 1) return HandType::FiveOfAKind;
     if (cardMap.size() == 2)
