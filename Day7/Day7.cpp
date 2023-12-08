@@ -31,10 +31,10 @@ enum CardType : int
     Eight,
     Nine,
     Ten,
-    Jack,
-    Queen,
-    King, 
-    Ace 
+    J,
+    Q,
+    K, 
+    A 
 };
 
 const int kNumCardsInHand = 5;
@@ -49,18 +49,18 @@ struct Hand
 // function prototypes
 vector<Hand> Part1(string filename);
 vector<Hand> Part2(string filename);
-vector<Hand> GetHands(string filename, bool specialJ);
+vector<Hand> GetHands(string filename, bool joker);
 CardType GetCardType(char c);
 std::map<CardType, int> GetCardMap(CardType* cards);
 HandType GetHandType(std::map<CardType, int> cardMap);
+HandType GetHandTypeWithJoker(std::map<CardType, int> cardMap);
 bool CompareHands(Hand hand1, Hand hand2);
 void PrintHand(Hand hand);
 
 int main()
 {
-    string filename = "PuzzleFile.txt";
-    
-    auto hands = Part1(filename);
+    string filename = "TestFile2.txt";
+    auto hands = Part2(filename);
     
     // calculate the winnings
     int totalWinnings = 0;
@@ -68,7 +68,6 @@ int main()
     for (int i = 0; i < hands.size(); i++)
     {
         //PrintHand(hands[i]);
-
         int rank = i + 1;
         int winnings = rank * hands[i].bid;
         //cout << hands[i].bid << " * " << rank << " = " << winnings << endl;
@@ -86,15 +85,15 @@ vector<Hand> Part1(string filename)
     return hands;
 }
 
-// J can pretend to be other cards for advantageous purposes
+// Joker replaced Jack
 vector<Hand> Part2(string filename)
 {
-    vector<Hand> hands = GetHands(filename, true); // TODO: this will change
-    sort(hands.begin(), hands.end(), CompareHands); // TODO: this will change
+    vector<Hand> hands = GetHands(filename, true);
+    sort(hands.begin(), hands.end(), CompareHands); // TODO: this will change ?
     return hands;
 }
 
-vector<Hand> GetHands(string filename, bool specialJ)
+vector<Hand> GetHands(string filename, bool joker)
 {
     std::ifstream file(filename);
     vector<Hand> hands;
@@ -107,10 +106,7 @@ vector<Hand> GetHands(string filename, bool specialJ)
         string cardsAsString = line.substr(0, deliminatorIndex);
         string bidAsString = line.substr(deliminatorIndex + 1, line.size() - 1);
 
-        if (cardsAsString.size() != kNumCardsInHand)
-        {
-            throw std::invalid_argument("Num cards invalid");
-        }
+        if (cardsAsString.size() != kNumCardsInHand) throw std::invalid_argument("Num cards invalid");
 
         // create a Hand stuct
         Hand hand; 
@@ -122,7 +118,9 @@ vector<Hand> GetHands(string filename, bool specialJ)
  
         // sort cards into a map with number of cards for each card type
         std::map<CardType, int> cardMap = GetCardMap(hand.cards);
-        hand.handType = GetHandType(cardMap);
+        hand.handType = joker 
+            ? GetHandTypeWithJoker(cardMap) 
+            : GetHandType(cardMap);
         
         // add to vector
         hands.push_back(hand);
@@ -142,10 +140,10 @@ CardType GetCardType(char c)
     if (c == '8') return CardType::Eight;
     if (c == '9') return CardType::Nine;
     if (c == 'T') return CardType::Ten;
-    if (c == 'J') return CardType::Jack;
-    if (c == 'Q') return CardType::Queen;
-    if (c == 'K') return CardType::King;
-    if (c == 'A') return CardType::Ace;
+    if (c == 'J') return CardType::J;
+    if (c == 'Q') return CardType::Q;
+    if (c == 'K') return CardType::K;
+    if (c == 'A') return CardType::A;
 
     throw std::invalid_argument("card is not an expected card type");
 }
@@ -188,15 +186,90 @@ HandType GetHandType(std::map<CardType, int> cardMap)
     {
         // can be either Three of a Kind or Two Pair
         auto it = cardMap.begin();
-        while (it != cardMap.end()) { 
+        while (it != cardMap.end()) 
+        { 
             if (it->second == 3) return HandType::ThreeOfAKind;
             if (it->second == 2) return HandType::TwoPair;
             it++; 
+            // NOTE: ignoring a value of 1 because it doesn't help us determine which Hand Type it is
         } 
         throw std::invalid_argument("Somehow there are 3 types but it's not Three of a Kind or Two Pair...");
     }
     if (cardMap.size() == 4) return HandType::OnePair;
     if (cardMap.size() == 5) return HandType::HighCard;
+    throw std::invalid_argument("cards do not correspond to an expected hand type");
+}
+
+HandType GetHandTypeWithJoker(std::map<CardType, int> cardMap)
+{
+    // identify if joker is present
+    auto search = cardMap.find(CardType::J);
+
+    if (search == cardMap.end())
+    {
+        // joker not found
+        return GetHandType(cardMap);
+    }
+
+    // joker found so treat the card map differently
+    int numJokers = search->second;
+
+    // from map, determine the hand type
+    if (cardMap.size() == 1) return HandType::FiveOfAKind; // jokers make up all 5
+    if (cardMap.size() == 2) return HandType::FiveOfAKind; // jokers would mimic the other card type and make a full set of 5
+    if (cardMap.size() == 3)
+    {
+        // determine if the original set is Three of a Kind or Two Pair
+        auto it = cardMap.begin();
+        while (it != cardMap.end()) 
+        { 
+            if (it->second == 3) { // e.g. 23444
+                if (numJokers == 1) return HandType::FourOfAKind;
+                if (numJokers == 2) return HandType::FiveOfAKind;
+                if (numJokers == 3) return HandType::ThreeOfAKind; // the jokers make up the Three of a Kind
+                throw std::invalid_argument("Too many jokers when there's a three of a kind...");
+            } 
+            if (it->second == 2) { // e.g. 22344
+                if (numJokers == 1) return HandType::FullHouse; // NOTE: the other two cards are of the same kind
+                if (numJokers == 2) return HandType::FourOfAKind;
+                throw std::invalid_argument("Too many jokers when there's a two of a kind...");
+            }
+            it++;    
+            // NOTE: ignoring a value of 1 because it doesn't help us determine which Hand Type it is
+        } 
+        throw std::invalid_argument("Somehow there are 3 types but it's not Three of a Kind or Two Pair...");
+    }
+    if (cardMap.size() == 4) //e.g. 23455
+    {
+        if (numJokers == 1) return HandType::ThreeOfAKind; 
+        if (numJokers == 2) 
+        {
+            // could be FourOfAKind or OnePair
+            auto it = cardMap.begin();
+            while (it != cardMap.end()) 
+            { 
+                if (it->first != CardType::J
+                    && it->second == 2)
+                {
+                    // another pair found so the jokers will make a four of a kind
+                    HandType::FourOfAKind;
+                }
+                it++; 
+            }
+            // another pair not found so the Joker is the one pair
+            return HandType::OnePair;
+        } 
+        if (numJokers == 3) return HandType::FiveOfAKind;
+        throw std::invalid_argument("Too many jokers when there's 4 unique card types...");
+    };
+    if (cardMap.size() == 5) // e.g. 23456
+    {
+        if (numJokers == 1) return HandType::OnePair; 
+        if (numJokers == 2) return HandType::ThreeOfAKind;
+        if (numJokers == 3) return HandType::FourOfAKind;
+        if (numJokers == 3) return HandType::FiveOfAKind;
+        throw std::invalid_argument("Too many jokers when there's 5 unique card types...");
+    };
     throw std::invalid_argument("cards do not correspond to an expected hand type");
 }
 
