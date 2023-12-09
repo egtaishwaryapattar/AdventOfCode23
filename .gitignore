@@ -1,2 +1,6 @@
 .vscode/
 *.exe
+Day9/Day9/obj/
+Day9/Day9/.vs/
+Day9/Day9/bin/Debug/net6.0/Day9.deps.json
+Day9/Day9/bin/
