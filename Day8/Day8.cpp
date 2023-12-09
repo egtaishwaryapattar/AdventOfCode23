@@ -12,9 +12,10 @@ void Part1(string filename, string instructions);
 void Part2(string filename, string instructions);
 map<string, tuple<string,string>> GetMap(string filename);
 int FindPath1(string instructions, map<string, tuple<string,string>> map);
-int FindPath2(string instructions, map<string, tuple<string,string>> map, vector<std::map<string, tuple<string, string>>::iterator> positions);
-vector<std::map<string, tuple<string, string>>::iterator> GetStartingPoints(map<string, tuple<string,string>> map);
-bool IsEndReached(vector<std::map<string, tuple<string, string>>::iterator> positions);
+int FindPath2(string instructions, map<string, tuple<string,string>> map, vector<string> positions);
+vector<string> GetStartingPoints(map<string, tuple<string,string>> map);
+bool IsEndReached(vector<string> positions);
+int FindGhostPath(string instructions, map<string, tuple<string,string>> map, string startPos);
 
 int main() 
 {
@@ -43,9 +44,19 @@ void Part2(string filename, string instructions)
 {
     map<string, tuple<string,string>> map = GetMap(filename);
     auto startingPoints = GetStartingPoints(map);
-    int numSteps = FindPath2(instructions, map, startingPoints);
 
-    cout << "Number of steps from AAA to ZZZ: " << numSteps <<endl;
+    for (int i = 0; i < startingPoints.size(); i++)
+    {
+        cout << "--------------Ghost " << i << "---------------" << endl;
+        int stepCount = FindGhostPath(instructions, map, startingPoints[i]);
+        cout << "Steps to end point: " << stepCount << endl;
+
+        cout << "Ghost " << i << " steps : " << stepCount << endl;
+    }
+    
+    //int numSteps = FindPath2(instructions, map, startingPoints);
+
+    //cout << "Number of steps from start to end for all ghosts: " << numSteps <<endl;
 }
 
 map<string, tuple<string,string>> GetMap(string filename)
@@ -82,6 +93,7 @@ int FindPath1(string instructions, map<string, tuple<string,string>> map)
     {
         if (iter < instructions.size())
         {
+            cout << search->first << endl;
             // iterator is smaller than the size of the instructions string so we can use it
             string nextKey = instructions[iter] == 'L'
                 ? get<0>(search->second)
@@ -99,7 +111,52 @@ int FindPath1(string instructions, map<string, tuple<string,string>> map)
     return numSteps;
 }
 
-int FindPath2(string instructions, map<string, tuple<string,string>> map, vector<std::map<string, tuple<string, string>>::iterator> positions)
+int FindGhostPath(string instructions, map<string, tuple<string,string>> map, string startPos)
+{
+    auto search = map.find(startPos);
+    int numSteps = 0;
+    int iter = 0;
+    int numEndpointsReached = 0;
+    bool endpointFound = false;
+
+    while (!endpointFound) 
+    {
+        //cout << search->first << endl;
+        // iterator is smaller than the size of the instructions string so we can use it
+        string nextKey = instructions[iter] == 'L'
+            ? get<0>(search->second)
+            : get<1>(search->second);
+
+        if (nextKey[2] == 'Z') // last character is Z
+        {
+            numEndpointsReached++;
+            endpointFound = true;
+
+        }
+        search = map.find(nextKey);
+
+        numSteps++;
+        iter++;
+
+        // reset iterator if we get to end of instructions
+        if (iter >= instructions.size())
+        {
+            iter = 0;
+        }
+    }
+
+    // get the next step after the end to see the loop
+    // cout << search->first << endl;
+    // string nextKey = instructions[iter] == 'L'
+    //     ? get<0>(search->second)
+    //     : get<1>(search->second);
+    // search = map.find(nextKey);
+    // cout << search->first << endl;
+
+    return numSteps;
+}
+
+int FindPath2(string instructions, map<string, tuple<string,string>> map, vector<string> positions)
 {
     int numSteps = 0;
     int iter = 0;
@@ -111,16 +168,18 @@ int FindPath2(string instructions, map<string, tuple<string,string>> map, vector
             // iterator is smaller than the size of the instructions string so we can use it
             for (int i = 0; i < positions.size(); i++)
             {
+                auto currentPos = map.find(positions[i]);
                 string nextKey = instructions[iter] == 'L'
-                ? get<0>(positions[i]->second)
-                : get<1>(positions[i]->second);
+                ? get<0>(currentPos->second)
+                : get<1>(currentPos->second);
 
                 // replace the position
-                positions[i] = map.find(nextKey);
+                positions[i] = nextKey;
             }
             
             numSteps++;
             iter ++;
+            //cout << "Num steps done: " << numSteps << endl;
         }
         else
         {
@@ -130,28 +189,29 @@ int FindPath2(string instructions, map<string, tuple<string,string>> map, vector
     return numSteps;
 }
 
-vector<std::map<string, tuple<string, string>>::iterator> GetStartingPoints(map<string, tuple<string,string>> map)
+vector<string> GetStartingPoints(map<string, tuple<string,string>> map)
 {
-    vector<std::map<string, tuple<string, string>>::iterator> startingPoints;
+    vector<string> startingPoints;
     auto it = map.begin();
 
     while (it != map.end()) 
     { 
         if ((it->first)[2] == 'A') // last of the 3 letters in the key should end in 'A' to be a starting point
         {
-            startingPoints.push_back(it);
+            startingPoints.push_back(it->first);
         } 
         it++;
     } 
+    cout << "Num ghost starting positions: " << startingPoints.size() << endl;
     return startingPoints;
 }
 
-bool IsEndReached(vector<std::map<string, tuple<string, string>>::iterator> positions)
+bool IsEndReached(vector<string> positions)
 {
     bool endReached = true;
     for (auto position : positions)
     {
-        if ((position->first)[2] != 'Z')
+        if ((position)[2] != 'Z')
         {
             return false;
         }
