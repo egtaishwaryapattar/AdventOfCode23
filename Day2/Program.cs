@@ -16,25 +16,32 @@ namespace Day2
             var lines = File.ReadAllLines(filename);
 
             var validGameSum = 0;
+            var gamePowerSum = 0;
 
             for (var i = 0; i < lines.Length; i++)
             {
                 var gameNumber = i + 1; // Note: games start with index of 1, not 0
                 var maxCubes = GetMaxNumCubesPerGame(lines[i]);
-                Console.WriteLine(
-                    $"Max cubes for Game {gameNumber}: {maxCubes.Item1} red, {maxCubes.Item2} green, {maxCubes.Item3} blue");
+                //Console.WriteLine(
+                //    $"Max cubes for Game {gameNumber}: {maxCubes.Item1} red, {maxCubes.Item2} green, {maxCubes.Item3} blue");
 
+                // Part 1
                 if (maxCubes.Item1 <= red
                     && maxCubes.Item2 <= green
                     && maxCubes.Item3 <= blue)
                 {
                     // valid game
-                    Console.WriteLine($"Game {gameNumber} is a valid game");
+                    //Console.WriteLine($"Game {gameNumber} is a valid game");
                     validGameSum += gameNumber;
                 }
+
+                // Part 2
+                var power = maxCubes.Item1 * maxCubes.Item2 * maxCubes.Item3;
+                gamePowerSum += power;
             }
 
-            Console.WriteLine($"Sum of valid games is {validGameSum}");
+            Console.WriteLine($"Part 1: Sum of valid games is {validGameSum}");
+            Console.WriteLine($"Part 2: Sum of powers in {gamePowerSum}");
         }
 
         static Tuple<int, int, int> GetMaxNumCubesPerGame(string line)
