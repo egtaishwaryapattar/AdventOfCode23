@@ -21,24 +21,15 @@ namespace Day9
 
         static void Main(string[] args)
         {
-            var filename = "PuzzleInput.txt";
+            var filename = "Test2.txt";
             var lines = File.ReadAllLines(filename);
 
             // Part 1
             var validRoute = GetValidLoop(lines);
 
             // Part2
-            // find enclosed parts of the loop
-
-            // first find things which are WITHIN the loop - this may still be inside ot outside
-            // iterate through whole file, and check if it's part of the route.
-            // if not, identify if it is enclosed by the route on all 4 sides (can be more than one step away)
-
-            // TODO: how to categorise whether it is inside or outside...?
-            // if outside, if you extend to the edge of the board in any direction, you will cross the route an even number of times
-            // if inside, cross it an odd number of times
-
-            
+            var numInside = GetTilesInsideRoute(validRoute, lines);
+            Console.WriteLine($"Tiles inside route = {numInside}");
         }
         static List<CellInfo> GetValidLoop(string[] lines)
         {
@@ -207,6 +198,92 @@ namespace Day9
             throw new ArgumentOutOfRangeException(nameof(currentDirection), currentDirection, null);
         }
 
-        //static int GetTilesInsideRoute(){}
+        static int GetTilesInsideRoute(List<CellInfo> route, string[] lines)
+        {
+            var numRows = lines.Count();
+            var numCols = lines[0].Length;
+            var numInside = 0;
+
+            // iterate through each cell in the file and identify whether it is inside the loop or not
+            for (var row = 0; row < numRows; row++)
+            {
+                for (var col = 0; col < numCols; col++)
+                {
+                    // first check that it isn't a cell on the route
+                    if (!IsCellOnRoute(route, row, col))
+                    {
+                        // if cell isn't on route, identify whether it is inside or not
+                        // can determine this by how many times it intersects the route until it gets to the edge
+                        // odd number = inside. 0 or even number = outside
+                        // intersections need to be perpendicular - do not follow the length of a route
+                        //      therefor exclude '|' if we are following in vertical direction  
+                        //      exclude '-' if we are following in horizontal direction
+                        // for ease, we are going to follow all cells vertically upwards to see how many times they intersect
+                        
+                        if (row != 0) // if row is 0, it will be on the outside
+                        {
+                            var numIntersections = 0;
+                            //var numJunctions = 0;
+
+                            // check whether rows above the cell intersect the route
+                            for (int i = row - 1; i >= 0; i--)
+                            {
+                                if (IsCellOnRoute(route, i, col))
+                                {
+                                    char c = (lines[i])[col];
+                                    if (c == '-')
+                                    {
+                                        numIntersections++;
+                                    }
+
+
+                                    //// confirm it is not following the path
+                                    //if (c != '|')
+                                    //{
+                                    //    if (c == '-')
+                                    //    {
+                                    //        // perpendicular intersection
+                                    //        numIntersections++;
+                                    //    }
+                                    //    else
+                                    //    {
+                                    //        // it has crossed a junction - need to find the pair to complete a route intersection
+                                    //        numJunctions++;
+
+                                    //        if (numJunctions == 2)
+                                    //        {
+                                    //            numIntersections++;
+                                    //            numJunctions = 0;
+                                    //        }
+                                    //    }
+                                    //}
+                                }
+                            }
+
+                            if (numIntersections % 2 == 1)
+                            {
+                                numInside++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return numInside;
+        }
+
+        // row and col corresponds to the cell we want to compare and check if it exists on the route
+        static bool IsCellOnRoute(List<CellInfo> route, int row, int col)
+        {
+            foreach (var cell in route)
+            {
+                if (cell.Position.Item1 == row
+                    && cell.Position.Item2 == col)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }
