@@ -13,20 +13,44 @@ namespace Day9
             Left
         }
 
+        private class CellInfo
+        {
+            public char Char;
+            public Tuple<int, int> Position;
+        }
+
         static void Main(string[] args)
         {
             var filename = "PuzzleInput.txt";
             var lines = File.ReadAllLines(filename);
 
+            // Part 1
+            var validRoute = GetValidLoop(lines);
+
+            // Part2
+            // find enclosed parts of the loop
+
+            // first find things which are WITHIN the loop - this may still be inside ot outside
+            // iterate through whole file, and check if it's part of the route.
+            // if not, identify if it is enclosed by the route on all 4 sides (can be more than one step away)
+
+            // TODO: how to categorise whether it is inside or outside...?
+            // if outside, if you extend to the edge of the board in any direction, you will cross the route an even number of times
+            // if inside, cross it an odd number of times
+
+            
+        }
+        static List<CellInfo> GetValidLoop(string[] lines)
+        {
             var startPoint = GetStartPoint(lines);
 
             // from the start position, there are multiple places you can go (up, right, down, left)
-            var upRoute = GetLoop(lines, startPoint, Direction.Up);
-            var rightRoute = GetLoop(lines, startPoint, Direction.Right);
-            var downRoute = GetLoop(lines, startPoint, Direction.Down);
-            var leftRoute = GetLoop(lines, startPoint, Direction.Left);
+            var upRoute = GetPossibleRoute(lines, startPoint, Direction.Up);
+            var rightRoute = GetPossibleRoute(lines, startPoint, Direction.Right);
+            var downRoute = GetPossibleRoute(lines, startPoint, Direction.Down);
+            var leftRoute = GetPossibleRoute(lines, startPoint, Direction.Left);
 
-            var allRoutes = new List<List<char>>
+            var allRoutes = new List<List<CellInfo>>
             {
                 upRoute,
                 rightRoute,
@@ -40,7 +64,7 @@ namespace Day9
 
                 if (length > 1) // all will start with 'S' at the beginning
                 {
-                    if (route[length - 1] == 'S')
+                    if (route[length - 1].Char == 'S')
                     {
                         // found the route that loops.furthest away point is the midpoint.
                         int midpoint;
@@ -55,10 +79,12 @@ namespace Day9
                             midpoint = length / 2;
                         }
                         Console.WriteLine($"Number of steps to midpoint in loop is {midpoint}");
-                        break;
+                        return route;
                     }
                 }
             }
+
+            throw new Exception("Valid route not found");
         }
 
         static Tuple<int, int> GetStartPoint(string[] lines)
@@ -75,10 +101,10 @@ namespace Day9
             throw new Exception("Start Point not found in file");
         }
 
-        static List<char> GetLoop(string[] lines, Tuple<int, int> startPoint, Direction startDirection)
+        static List<CellInfo> GetPossibleRoute(string[] lines, Tuple<int, int> startPoint, Direction startDirection)
         {
             // create loop and initialise with starting point
-            var path = new List<char> { 'S' };
+            var path = new List<CellInfo> { new CellInfo{Char = 'S', Position = startPoint} };
             
             var currentRow = startPoint.Item1;
             var currentCol = startPoint.Item2;
@@ -130,7 +156,7 @@ namespace Day9
                 // check if the character in the next position is valid
                 if (validChars.Contains(nextChar))
                 {
-                    path.Add(nextChar);
+                    path.Add(new CellInfo {Char = nextChar, Position = nextPos});
                     direction = GetNextDirection(nextChar, direction);
                     currentRow = nextPos.Item1;
                     currentCol = nextPos.Item2;
@@ -139,7 +165,7 @@ namespace Day9
                 {
                     if (nextChar == 'S')
                     {
-                        path.Add(nextChar);
+                        path.Add(new CellInfo { Char = nextChar, Position = nextPos});
                     }
                     endOfLoop = true;
                 }
@@ -180,5 +206,7 @@ namespace Day9
             }
             throw new ArgumentOutOfRangeException(nameof(currentDirection), currentDirection, null);
         }
+
+        //static int GetTilesInsideRoute(){}
     }
 }
