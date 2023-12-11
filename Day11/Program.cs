@@ -17,11 +17,11 @@ namespace Day11
             string filename = "PuzzleInput.txt";
             var lines = File.ReadAllLines(filename);
             var matrix = ConvertLinesToMatrix(lines);
-            PrintMatrix(matrix);
+            //PrintMatrix(matrix);
 
-            var (expanded, galaxies) = ApplyGravitationalEffects(matrix);
+            var (expanded, galaxies) = ApplyGravitationalEffects(matrix, 1000000);
             Console.WriteLine("Expanded matrix:");
-            PrintMatrix(expanded);
+            //PrintMatrix(expanded);
 
             var shortestPaths = GetShortestPathBetweenGalaxies(galaxies);
 
@@ -52,14 +52,16 @@ namespace Day11
             return matrix;
         }
 
-        static Tuple<char[,], List<Galaxy>> ApplyGravitationalEffects(char[,] matrix)
+        static Tuple<char[,], List<Galaxy>> ApplyGravitationalEffects(char[,] matrix, int expansionFactor)
         {
+            expansionFactor = expansionFactor - 1; // 2x = 1 extra row/cols, 10x = 9 extra rows/cols, 100x = 99 extra rows/cols 
+
             var numRows = matrix.GetLength(0);
             var numCols = matrix.GetLength(1);
 
             // determine how many rows and columns need to be expanded
             var emptyRows = new List<int>();
-            for (int i = 0; i < numRows; i++)
+            for (var i = 0; i < numRows; i++)
             {
                 bool doesRowHaveGalaxy = false;
                 for (int j = 0; j < numCols; j++)
@@ -77,7 +79,7 @@ namespace Day11
             }
 
             var emptyCols = new List<int>();
-            for (int j = 0; j < numCols; j++)
+            for (var j = 0; j < numCols; j++)
             {
                 bool doesColHaveGalaxy = false;
                 for (int i = 0; i < numRows; i++)
@@ -94,9 +96,9 @@ namespace Day11
                 }
             }
 
-            var expandedRows = numRows + emptyRows.Count;
-            var expandedCols = numCols + emptyCols.Count;
-            char[,] expanded = new char[expandedRows, expandedCols];
+            var expandedRows = numRows + (emptyRows.Count * expansionFactor);
+            var expandedCols = numCols + (emptyCols.Count * expansionFactor);
+            var expanded = new char[expandedRows, expandedCols];
 
             // iterate through the original matrix and keep track of the row and col we are on for the expanded matrix
             // label galaxies
@@ -123,11 +125,15 @@ namespace Day11
                     {
                         expanded[expRow, expCol] = matrix[i, j];
                         expCol++;
-                        // check if column is in the empty cols list and add an extra column
+                        // check if column is in the empty cols list and extra columns
                         if (emptyCols.Contains(j))
                         {
-                            expanded[expRow, expCol] = '.';
-                            expCol++;
+                            // add an extra {expansionFactor} number of columns
+                            for (var k = 0; k < expansionFactor; k++)
+                            {
+                                expanded[expRow, expCol] = '.';
+                                expCol++;
+                            }
                         }
                     }
                 }
@@ -137,12 +143,16 @@ namespace Day11
                 // check if the row is in empty row list and add extra row
                 if (emptyRows.Contains(i))
                 {
-                    for (int j = 0; j < expandedCols; j++)
+                    // add an extra {expansionFactor} number of rows
+                    for (var k = 0; k < expansionFactor; k++)
                     {
-                        expanded[expRow, j] = '.';
-                    }
+                        for (int j = 0; j < expandedCols; j++)
+                        {
+                            expanded[expRow, j] = '.';
+                        }
 
-                    expRow++;
+                        expRow++;
+                    }
                 }
             }
 
@@ -166,7 +176,7 @@ namespace Day11
                     var y = Math.Abs(galaxyB.Position.Item1 - galaxyA.Position.Item1);
                     var steps = x + y;
 
-                    Console.WriteLine($"Steps between Galaxy {galaxyA.Number} and Galaxy {galaxyB.Number} = {steps}");
+                    //Console.WriteLine($"Steps between Galaxy {galaxyA.Number} and Galaxy {galaxyB.Number} = {steps}");
                     shortestPaths.Add(steps);
                 }
             }
