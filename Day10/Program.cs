@@ -34,12 +34,10 @@ namespace Day9
             // Part2
             ConvertLinesToMatrix(lines);
             ReplaceNonRouteCells(validRoute);
-            PrintMatrix();
 
             var numInside = GetTilesInsideRoute(validRoute);
+            PrintMatrix();
             Console.WriteLine($"Tiles inside route = {numInside}");
-
-            //PrintMatrix();
         }
         static List<CellInfo> GetValidLoop(string[] lines)
         {
@@ -390,49 +388,65 @@ namespace Day9
                 case Direction.Up:
                     for (var row = currentPos.Item1 - 1; row >= 0; row--)
                     {
-                        if (IsCellOnRoute(route, row, currentPos.Item2)
-                            || inputFile[row, currentPos.Item2] == populateChar)
+                        if (inputFile[row, currentPos.Item2] == '.')
                         {
-                            break; // found end point of populating
+                            inputFile[row, currentPos.Item2] = populateChar;
+                            numCharsWritten++; 
                         }
-                        inputFile[row, currentPos.Item2] = populateChar;
-                        numCharsWritten++;
+                        else if (inputFile[row, currentPos.Item2] != populateChar)
+                        {
+                            // allow to hop over character that is same as populatedChar.
+                            // But if it is not this character, then we found end point of populating
+                            break;
+                        }
                     }
                     break;
                 case Direction.Right:
                     for (var col = currentPos.Item2 + 1; col < numCols; col++)
                     {
-                        if (IsCellOnRoute(route, currentPos.Item1, col)
-                            || inputFile[currentPos.Item1, col] == populateChar)
+                        if (inputFile[currentPos.Item1, col] == '.')
                         {
-                            break; // found end point of populating
+                            inputFile[currentPos.Item1, col] = populateChar;
+                            numCharsWritten++;
                         }
-                        inputFile[currentPos.Item1, col] = populateChar;
-                        numCharsWritten++;
+                        else if (inputFile[currentPos.Item1, col] != populateChar)
+                        {
+                            // allow to hop over character that is same as populatedChar.
+                            // But if it is not this character, then we found end point of populating
+                            break;
+                        }
                     }
                     break;
                 case Direction.Down:
                     for (var row = currentPos.Item1 + 1; row < numRows; row++)
                     {
-                        if (IsCellOnRoute(route, row, currentPos.Item2)
-                            || inputFile[row, currentPos.Item2] == populateChar)
+                        if (inputFile[row, currentPos.Item2] == '.')
                         {
-                            break; // found end point of populating
+                            inputFile[row, currentPos.Item2] = populateChar;
+                            numCharsWritten++;
                         }
-                        inputFile[row, currentPos.Item2] = populateChar;
-                        numCharsWritten++;
+                        else if (inputFile[row, currentPos.Item2] != populateChar)
+                        {
+                            // allow to hop over character that is same as populatedChar.
+                            // But if it is not this character, then we found end point of populating
+                            break;
+                        }
                     }
                     break;
                 case Direction.Left:
                     for (var col = currentPos.Item2 - 1; col >= 0; col--)
                     {
-                        if (IsCellOnRoute(route, currentPos.Item1, col)
-                            || inputFile[currentPos.Item1, col] == populateChar)
+                        if (inputFile[currentPos.Item1, col] == '.')
                         {
-                            break; // found end point of populating
+                            inputFile[currentPos.Item1, col] = populateChar;
+                            numCharsWritten++;
                         }
-                        inputFile[currentPos.Item1, col] = populateChar;
-                        numCharsWritten++;
+                        else if (inputFile[currentPos.Item1, col] != populateChar)
+                        {
+                            // allow to hop over character that is same as populatedChar.
+                            // But if it is not this character, then we found end point of populating
+                            break;
+                        }
                     }
                     break;
                 default:
