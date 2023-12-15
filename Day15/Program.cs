@@ -13,7 +13,11 @@ namespace Day15
             if (lines.Length != 1) throw new Exception("There should only be 1 line in the file");
 
             var seq = lines[0].Split(',');
+            Part1(seq);
+        }
 
+        static void Part1(string[] seq)
+        {
             //var hashValue = RunHashAlgorithm("HASH");
 
             var seqHash = 0;
@@ -23,6 +27,11 @@ namespace Day15
             }
 
             Console.WriteLine($"Sum of HASH for sequence is : {seqHash}");
+        }
+
+        static void Part2(string[] seq)
+        {
+            
         }
 
         static int RunHashAlgorithm(string str)
