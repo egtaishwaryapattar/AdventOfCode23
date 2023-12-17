@@ -35,15 +35,73 @@ namespace Day16
         {
             var filename = "PuzzleInput.txt";
             var lines = File.ReadAllLines(filename);
+            
+            Part2(lines);
+        }
+
+        static void Part1(string[] lines)
+        {
             _matrix = ConvertLinesToMatrix(lines);
             //PrintMatrix(_matrix);
-
-            FollowLightPath(new Tuple<int, int>(0,0), DirectionOfTravel.Right);
+            FollowLightPath(new Tuple<int, int>(0, 0), DirectionOfTravel.Right);
 
             //Console.WriteLine("With light paths:");
             //PrintMatrix(_matrix);
 
             Console.WriteLine($"Number of energized cells are: {_energizedCells.Count}");
+        }
+
+        static void Part2(string[] lines)
+        {
+            var maxEnergizedCells = 0;
+            var numRows = lines.Length;
+            var numCols = lines[0].Length;
+
+            // start with rows - going left or right
+            for (var i = 0; i < numRows; i++)
+            {
+                // start from left edge going right
+                _matrix = ConvertLinesToMatrix(lines);
+                _energizedCells.Clear();
+                FollowLightPath(new Tuple<int, int>(i, 0), DirectionOfTravel.Right);
+                if (_energizedCells.Count > maxEnergizedCells)
+                {
+                    maxEnergizedCells = _energizedCells.Count;
+                }
+
+                // start from right edge going left
+                _matrix = ConvertLinesToMatrix(lines);
+                _energizedCells.Clear();
+                FollowLightPath(new Tuple<int, int>(i, numCols - 1), DirectionOfTravel.Left);
+                if (_energizedCells.Count > maxEnergizedCells)
+                {
+                    maxEnergizedCells = _energizedCells.Count;
+                }
+            }
+
+            // cols - going up or down
+            for (var j = 0; j < numCols; j++)
+            {
+                // start from top edge going down
+                _matrix = ConvertLinesToMatrix(lines);
+                _energizedCells.Clear();
+                FollowLightPath(new Tuple<int, int>(0, j), DirectionOfTravel.Down);
+                if (_energizedCells.Count > maxEnergizedCells)
+                {
+                    maxEnergizedCells = _energizedCells.Count;
+                }
+
+                // start from bottom edge going up
+                _matrix = ConvertLinesToMatrix(lines);
+                _energizedCells.Clear();
+                FollowLightPath(new Tuple<int, int>(numRows - 1, j), DirectionOfTravel.Up);
+                if (_energizedCells.Count > maxEnergizedCells)
+                {
+                    maxEnergizedCells = _energizedCells.Count;
+                }
+            }
+
+            Console.WriteLine($"Max Number of energized cells is {maxEnergizedCells}");
         }
 
         static char[,] ConvertLinesToMatrix(string[] lines)
