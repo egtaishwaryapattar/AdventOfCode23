@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Numerics;
+using static Day16.Program;
 
 namespace Day16
 {
@@ -11,18 +12,12 @@ namespace Day16
             Up, Down, Left, Right
         }
 
-        private enum MirrorTypes
+        private enum MirrorType
         {
             ForwardSlash,   //      '/'
             Backslash,      //      '\'
             Vertical,       //      '|'
             Horizontal      //      '-'
-        }
-
-        private class Mirror // mirror is going to include both mirror and splitters
-        {
-            public MirrorTypes Type;
-            public Tuple<int, int> Position;
         }
 
         public class EnergizedCell
@@ -33,340 +28,322 @@ namespace Day16
             public bool VerticalPassage;
         }
 
+        private static char[,] _matrix;
+        private static List<EnergizedCell> _energizedCells = new List<EnergizedCell>();
+
         static void Main(string[] args)
         {
-            string filename = "Test1.txt";
+            var filename = "PuzzleInput.txt";
             var lines = File.ReadAllLines(filename);
+            _matrix = ConvertLinesToMatrix(lines);
+            //PrintMatrix(_matrix);
+
+            FollowLightPath(new Tuple<int, int>(0,0), DirectionOfTravel.Right);
+
+            //Console.WriteLine("With light paths:");
+            //PrintMatrix(_matrix);
+
+            Console.WriteLine($"Number of energized cells are: {_energizedCells.Count}");
+        }
+
+        static char[,] ConvertLinesToMatrix(string[] lines)
+        {
             var rows = lines.Length;
             var cols = lines[0].Length;
-            var energizedCells = new List<EnergizedCell>();
 
-            var mirrors = GetMirrorPositions(lines);
+            char[,] matrix = new char[rows, cols];
 
-            energizedCells = FollowLightPath(new Tuple<int, int>(rows, cols), energizedCells, mirrors, 
-                new Tuple<int, int>(0, 0), DirectionOfTravel.Right);
-
-            Console.WriteLine($"Number of energized cells are: {energizedCells.Count}");
-        }
-
-        static List<Mirror> GetMirrorPositions(string[] lines)
-        {
-            var mirrors = new List<Mirror>();
-            var row = 0;
-
-            foreach (var line in lines)
+            for (var row = 0; row < rows; row++)
             {
-                var col = 0;
-                foreach (var c in line)
+                for (var col = 0; col < cols; col++)
                 {
-                    if (c == '/')
-                    {
-                        mirrors.Add(new Mirror(){Type = MirrorTypes.ForwardSlash, Position = new Tuple<int, int>(row,col)});
-                    }
-                    else if (c == '\\')
-                    {
-                        mirrors.Add(new Mirror() { Type = MirrorTypes.Backslash, Position = new Tuple<int, int>(row, col) });
-                    }
-                    else if (c == '|')
-                    {
-                        mirrors.Add(new Mirror() { Type = MirrorTypes.Vertical, Position = new Tuple<int, int>(row, col) });
-                    }
-                    else if (c == '-')
-                    {
-                        mirrors.Add(new Mirror() { Type = MirrorTypes.Horizontal, Position = new Tuple<int, int>(row, col) });
-                    }
-                    col++;
+                    matrix[row, col] = (lines[row])[col];
                 }
-
-                row++;
             }
-
-            return mirrors;
+            return matrix;
         }
 
-        static List<EnergizedCell> FollowLightPath(Tuple<int, int> gridSize, List<EnergizedCell> energizedCells, List<Mirror> mirrors,
-            Tuple<int, int> startingPos, DirectionOfTravel startingDirection)
+        static void FollowLightPath(Tuple<int, int> startingPos, DirectionOfTravel startingDirection)
         {
             // follow light path until we hit a wall or path of light traveling in the same direction
 
-            var position = startingPos;
+            var row = startingPos.Item1;
+            var col = startingPos.Item2;
             var direction = startingDirection;
             bool endPointFound = false;
 
             while (!endPointFound)
             {
-                // check if we have hit a mirror
-                bool posHasMirror = false;
+                // c can be a '.' to indicate untraveled empty spot,
+                // a mirror '/' '\' or a splitter '|' '-'
+                // or '#' to represent light has traveled here
+                var c = _matrix[row, col];
 
-                foreach (var mirror in mirrors)
+                if (c == '.')
                 {
-                    if (mirror.Position.Item1 == position.Item1
-                        && mirror.Position.Item2 == position.Item2)
+                    _matrix[row, col] = '#';
+                    //Console.WriteLine("Cell has been energized");
+                    //PrintMatrix(_matrix);
+
+                    _energizedCells.Add(new EnergizedCell()
                     {
-                        posHasMirror = true;
-
-                        // add to energised list if it isn't already
-                        if (!HasCellBeenEnergized(position, energizedCells))
-                        {
-                            energizedCells.Add(new EnergizedCell()
-                            {
-                                Position = new Tuple<int, int>(position.Item1, position.Item2), 
-                                ContainsMirror = true
-                            });
-                        }
-
-                        // based on mirror type, decide what to do next and update next position and direction
-                        switch (direction)
-                        {
-                            case DirectionOfTravel.Up:
-                                switch (mirror.Type)
-                                {
-                                    case MirrorTypes.ForwardSlash:
-                                        // go right (increment the column)
-                                        direction = DirectionOfTravel.Right;
-                                        position = new Tuple<int, int>(position.Item1, position.Item2 + 1);
-                                        if (position.Item2 >= gridSize.Item2) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Backslash:
-                                        // go left (decrement the column)
-                                        direction = DirectionOfTravel.Left;
-                                        position = new Tuple<int, int>(position.Item1, position.Item2 - 1);
-                                        if (position.Item2 < 0) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Vertical:
-                                        // keep going up (decrement the row)
-                                        position = new Tuple<int, int>(position.Item1 - 1, position.Item2);
-                                        if (position.Item1 < 0) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Horizontal:
-                                        // split so one goes left and one goes right with the current position as the start position
-                                        energizedCells = FollowLightPath(gridSize, energizedCells, mirrors, position, DirectionOfTravel.Left);
-                                        energizedCells = FollowLightPath(gridSize, energizedCells, mirrors, position, DirectionOfTravel.Right);
-                                        break;
-
-                                    default:
-                                        throw new ArgumentOutOfRangeException();
-                                }
-                                break;
-
-                            case DirectionOfTravel.Down:
-                                switch (mirror.Type)
-                                {
-                                    case MirrorTypes.ForwardSlash:
-                                        // go left (decrement the column)
-                                        direction = DirectionOfTravel.Left;
-                                        position = new Tuple<int, int>(position.Item1, position.Item2 - 1);
-                                        if (position.Item2 < 0) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Backslash:
-                                        // go right (increment the column)
-                                        direction = DirectionOfTravel.Right;
-                                        position = new Tuple<int, int>(position.Item1, position.Item2 + 1);
-                                        if (position.Item2 >= gridSize.Item2) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Vertical:
-                                        // keep going down (increment the row)
-                                        position = new Tuple<int, int>(position.Item1 + 1, position.Item2);
-                                        if (position.Item1 >= gridSize.Item1) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Horizontal:
-                                        // split so one goes left and one goes right with the current position as the start position
-                                        energizedCells = FollowLightPath(gridSize, energizedCells, mirrors, position, DirectionOfTravel.Left);
-                                        energizedCells = FollowLightPath(gridSize, energizedCells, mirrors, position, DirectionOfTravel.Right);
-                                        break;
-
-                                    default:
-                                        throw new ArgumentOutOfRangeException();
-                                }
-                                break;
-
-                            case DirectionOfTravel.Left:
-                                switch (mirror.Type)
-                                {
-                                    case MirrorTypes.ForwardSlash:
-                                        // go down (increment the row)
-                                        direction = DirectionOfTravel.Down;
-                                        position = new Tuple<int, int>(position.Item1 + 1, position.Item2);
-                                        if (position.Item1 >= gridSize.Item1) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Backslash:
-                                        // go up (decrement the row)
-                                        direction = DirectionOfTravel.Up;
-                                        position = new Tuple<int, int>(position.Item1 - 1, position.Item2);
-                                        if (position.Item1 < 0) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Vertical:
-                                        // split so one goes up and one goes down with the current position as the start position
-                                        energizedCells = FollowLightPath(gridSize, energizedCells, mirrors, position, DirectionOfTravel.Up);
-                                        energizedCells = FollowLightPath(gridSize, energizedCells, mirrors, position, DirectionOfTravel.Down);
-                                        break;
-
-                                    case MirrorTypes.Horizontal:
-                                        // keep going left (decrement the col)
-                                        position = new Tuple<int, int>(position.Item1, position.Item2 - 1);
-                                        if (position.Item2 < 0) endPointFound = true;
-                                        break;
-
-                                    default:
-                                        throw new ArgumentOutOfRangeException();
-                                }
-                                break;
-
-                            case DirectionOfTravel.Right:
-                                switch (mirror.Type)
-                                {
-                                    case MirrorTypes.ForwardSlash:
-                                        // go up (decrement the row)
-                                        direction = DirectionOfTravel.Up;
-                                        position = new Tuple<int, int>(position.Item1 - 1, position.Item2);
-                                        if (position.Item1 < 0) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Backslash:
-                                        // go down (increment the row)
-                                        direction = DirectionOfTravel.Down;
-                                        position = new Tuple<int, int>(position.Item1 + 1, position.Item2);
-                                        if (position.Item1 >= gridSize.Item1) endPointFound = true;
-                                        break;
-
-                                    case MirrorTypes.Vertical:
-                                        // split so one goes up and one goes down with the current position as the start position
-                                        energizedCells = FollowLightPath(gridSize, energizedCells, mirrors, position, DirectionOfTravel.Up);
-                                        energizedCells = FollowLightPath(gridSize, energizedCells, mirrors, position, DirectionOfTravel.Down);
-                                        break;
-
-                                    case MirrorTypes.Horizontal:
-                                        // keep going right (increment the col)
-                                        position = new Tuple<int, int>(position.Item1, position.Item2 + 1);
-                                        if (position.Item2 >= gridSize.Item2) endPointFound = true;
-                                        break;
-
-                                    default:
-                                        throw new ArgumentOutOfRangeException();
-                                }
-                                break;
-
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-                        
-                        break;
-                    }
+                        Position = new Tuple<int, int>(row, col), 
+                        VerticalPassage = direction == DirectionOfTravel.Up || direction == DirectionOfTravel.Down, 
+                        HorizontalPassage = direction == DirectionOfTravel.Left || direction == DirectionOfTravel.Right
+                    });
+                    
+                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
                 }
-
-                if (!posHasMirror)
+                else if (c == '#')
                 {
-                    var foundExistingEnergizedCell = false;
-
-                    foreach (var cell in energizedCells)
+                    // found a light path - determine if we are crossing it or following it
+                    foreach (var cell in _energizedCells)
                     {
-                        if (cell.Position.Item1 == position.Item1
-                            || cell.Position.Item2 == position.Item2)
+                        if (cell.Position.Item1 == row
+                            && cell.Position.Item2 == col)
                         {
-                            foundExistingEnergizedCell = true;
-
-                            // determine if we are going over the same path and if we are end looping
                             if (direction == DirectionOfTravel.Up || direction == DirectionOfTravel.Down)
                             {
                                 if (cell.VerticalPassage)
                                 {
                                     endPointFound = true;
+                                    break;
                                 }
-                                else
-                                {
-                                    cell.VerticalPassage = true;
-                                }
+                                cell.VerticalPassage = true;
                             }
                             else
                             {
                                 if (cell.HorizontalPassage)
                                 {
                                     endPointFound = true;
+                                    break;
                                 }
-                                else
-                                {
-                                    cell.HorizontalPassage = true;
-                                }
+                                cell.HorizontalPassage = true;
                             }
+
+                            ((row, col), endPointFound) = GetNextPosition(row, col, direction);
                             break;
                         }
                     }
-
-                    if (!foundExistingEnergizedCell)
+                }
+                else
+                {
+                    // will be a mirror or splitter
+                    if (!HasCellBeenEnergized(row, col))
                     {
-                        energizedCells.Add(new EnergizedCell()
+                        _energizedCells.Add(new EnergizedCell()
                         {
-                            Position = new Tuple<int, int>(position.Item1, position.Item2),
-                            VerticalPassage = direction == DirectionOfTravel.Up || direction == DirectionOfTravel.Down,
-                            HorizontalPassage = direction == DirectionOfTravel.Right || direction == DirectionOfTravel.Left,
+                            Position = new Tuple<int, int>(row, col),
+                            ContainsMirror = true
                         });
                     }
-
-                    if (!endPointFound)
+                    
+                    // based on mirror type, decide what to do next and update next position and direction
+                    switch (direction)
                     {
-                        // find next position and direction
-                        switch (direction)
-                        {
-                            case DirectionOfTravel.Up:
-                                // go up (decrement the row)
-                                direction = DirectionOfTravel.Up;
-                                position = new Tuple<int, int>(position.Item1 - 1, position.Item2);
-                                if (position.Item1 < 0) endPointFound = true;
-                                break;
+                        case DirectionOfTravel.Up:
+                            switch (GetMirrorType(c))
+                            {
+                                case MirrorType.ForwardSlash:
+                                    direction = DirectionOfTravel.Right;
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
 
-                            case DirectionOfTravel.Down:
-                                // go down (increment the row)
-                                direction = DirectionOfTravel.Down;
-                                position = new Tuple<int, int>(position.Item1 + 1, position.Item2);
-                                if (position.Item1 >= gridSize.Item1) endPointFound = true;
-                                break;
+                                case MirrorType.Backslash:
+                                    direction = DirectionOfTravel.Left;
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
 
-                            case DirectionOfTravel.Left:
-                                // go left (decrement the column)
-                                direction = DirectionOfTravel.Left;
-                                position = new Tuple<int, int>(position.Item1, position.Item2 - 1);
-                                if (position.Item2 < 0) endPointFound = true;
-                                break;
+                                case MirrorType.Vertical:
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
 
-                            case DirectionOfTravel.Right:
-                                // go right (increment the column)
-                                direction = DirectionOfTravel.Right;
-                                position = new Tuple<int, int>(position.Item1, position.Item2 + 1);
-                                if (position.Item2 >= gridSize.Item2) endPointFound = true;
-                                break;
+                                case MirrorType.Horizontal:
+                                    // split so one goes left and one goes right with the current position as the start position
+                                    FollowLightPath(new Tuple<int, int>(row,col), DirectionOfTravel.Left);
+                                    FollowLightPath(new Tuple<int, int>(row,col), DirectionOfTravel.Right);
+                                    endPointFound = true; 
+                                    break;
 
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+                            break;
+
+                        case DirectionOfTravel.Down:
+                            switch (GetMirrorType(c))
+                            {
+                                case MirrorType.ForwardSlash:
+                                    direction = DirectionOfTravel.Left;
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                case MirrorType.Backslash:
+                                    direction = DirectionOfTravel.Right;
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                case MirrorType.Vertical:
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                case MirrorType.Horizontal:
+                                    // split so one goes left and one goes right with the current position as the start position
+                                    FollowLightPath(new Tuple<int, int>(row, col), DirectionOfTravel.Left);
+                                    FollowLightPath(new Tuple<int, int>(row, col), DirectionOfTravel.Right);
+                                    endPointFound = true;
+                                    break;
+
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+                            break;
+
+                        case DirectionOfTravel.Left:
+                            switch (GetMirrorType(c))
+                            {
+                                case MirrorType.ForwardSlash:
+                                    direction = DirectionOfTravel.Down;
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                case MirrorType.Backslash:
+                                    direction = DirectionOfTravel.Up;
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                case MirrorType.Vertical:
+                                    // split so one goes up and one goes down with the current position as the start position
+                                    FollowLightPath(new Tuple<int, int>(row, col), DirectionOfTravel.Up);
+                                    FollowLightPath(new Tuple<int, int>(row, col), DirectionOfTravel.Down);
+                                    endPointFound = true;
+                                    break;
+
+                                case MirrorType.Horizontal:
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+                            break;
+
+                        case DirectionOfTravel.Right:
+                            switch (GetMirrorType(c))
+                            {
+                                case MirrorType.ForwardSlash:
+                                    direction = DirectionOfTravel.Up;
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                case MirrorType.Backslash:
+                                    direction = DirectionOfTravel.Down;
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                case MirrorType.Vertical:
+                                    // split so one goes up and one goes down with the current position as the start position
+                                    FollowLightPath(new Tuple<int, int>(row, col), DirectionOfTravel.Up);
+                                    FollowLightPath(new Tuple<int, int>(row, col), DirectionOfTravel.Down);
+                                    endPointFound = true;
+                                    break;
+
+                                case MirrorType.Horizontal:
+                                    ((row, col), endPointFound) = GetNextPosition(row, col, direction);
+                                    break;
+
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
+                    
                 }
-            }
 
-            return energizedCells;
+            }
         }
 
-        static bool HasCellBeenEnergized(Tuple<int, int> position, List<EnergizedCell> energizedCells)
+        static Tuple<Tuple<int, int>, bool> GetNextPosition(int row, int col, DirectionOfTravel direction)
+        {
+            bool endPointFound = false;
+
+            // find next position and direction
+            switch (direction)
+            {
+                case DirectionOfTravel.Up:
+                    // go up (decrement the row)
+                    row = row - 1;
+                    if (row < 0) endPointFound = true;
+                    break;
+
+                case DirectionOfTravel.Down:
+                    // go down (increment the row)
+                    row = row + 1;
+                    if (row >= _matrix.GetLength(0)) endPointFound = true;
+                    break;
+
+                case DirectionOfTravel.Left:
+                    // go left (decrement the column)
+                    col = col - 1;
+                    if (col < 0) endPointFound = true;
+                    break;
+
+                case DirectionOfTravel.Right:
+                    // go right (increment the column)
+                    col = col + 1;
+                    if (col >= _matrix.GetLength(1)) endPointFound = true;
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            var nextPos = new Tuple<int, int>(row, col);
+            return new Tuple<Tuple<int, int>, bool>(nextPos, endPointFound);
+        }
+
+        static MirrorType GetMirrorType(char c)
+        {
+            if (c == '/') return MirrorType.ForwardSlash;
+            if (c == '\\') return MirrorType.Backslash;
+            if (c == '|') return MirrorType.Vertical;
+            if (c == '-') return MirrorType.Horizontal;
+
+            throw new Exception("Unrecognised mirror type");
+        }
+
+        static bool HasCellBeenEnergized(int row, int col)
         {
             var cellEnergized = false;
 
-            foreach (var cell in energizedCells)
+            foreach (var cell in _energizedCells)
             {
-                if (cell.Position.Item1 == position.Item1
-                    && cell.Position.Item2 == position.Item2)
+                if (cell.Position.Item1 == row
+                    && cell.Position.Item2 == col)
                 {
                     cellEnergized = true;
                     break;
                 }
             }
             return cellEnergized;
+        }
+
+        static void PrintMatrix(char[,] matrix)
+        {
+            var numRows = matrix.GetLength(0);
+            var numCols = matrix.GetLength(1);
+
+            for (int i = 0; i < numRows; i++)
+            {
+                for (int j = 0; j < numCols; j++)
+                {
+                    Console.Write($"{matrix[i, j]}");
+                }
+                Console.Write("\n");
+            }
         }
     }
 }
