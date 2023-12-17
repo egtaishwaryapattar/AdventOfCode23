@@ -10,7 +10,7 @@ namespace Day16
     {
         static void Main(string[] args)
         {
-            var filename = "Test1.txt";
+            var filename = "PuzzleInput.txt";
             var lines = File.ReadAllLines(filename);
 
             var patterns = GetPatterns(lines);
@@ -18,12 +18,12 @@ namespace Day16
             var calculation = 0;
             foreach (var pattern in patterns)
             {
-                PrintPattern(pattern);
+                //PrintPattern(pattern);
 
                 var numCols = CheckForVerticalRefection(pattern);
                 if (numCols != -1)
                 {
-                    Console.WriteLine($"Vertical reflection found after numCols = {numCols}");
+                    //Console.WriteLine($"Vertical reflection found after numCols = {numCols}");
                     calculation = calculation + numCols;
                 }
                 else
@@ -31,7 +31,7 @@ namespace Day16
                     var numRows = CheckForHorizontalReflection(pattern);
                     if (numRows != -1)
                     {
-                        Console.WriteLine($"Horizontal reflection found after numRows = {numRows}");
+                        //Console.WriteLine($"Horizontal reflection found after numRows = {numRows}");
                         calculation = calculation + (100 * numRows);
                     }
                     else
@@ -134,8 +134,8 @@ namespace Day16
 
                 invertedPattern.Add(patternCol.ToString());
             }
-            Console.WriteLine("Inverted pattern");
-            PrintPattern(invertedPattern);
+            //Console.WriteLine("Inverted pattern");
+            //PrintPattern(invertedPattern);
             return invertedPattern;
         }
 
