@@ -41,6 +41,26 @@ namespace Day19
             public int Count;
         }
 
+        private class Bounds
+        {
+            public int[] xRange = new int[2] {1,4000};
+            public int[] mRange = new int[2] { 1, 4000 };
+            public int[] aRange = new int[2] { 1, 4000 };
+            public int[] sRange = new int[2] { 1, 4000 };
+
+            // index 0 is lower boundary, index 1 is upper boundary. Range is inclusive of both numbers
+            public ulong GetCombinations()
+            {
+                return (ulong)(xRange[1] - xRange[0] + 1) * (ulong)(mRange[1] - mRange[0] + 1) *
+                       (ulong)(aRange[1] - aRange[0] + 1) * (ulong)(sRange[1] - sRange[0] + 1);
+            }
+
+            public void PrintBounds()
+            {
+                Console.WriteLine($"{xRange[0]}\t{xRange[1]}\t\t{mRange[0]}\t{mRange[1]}\t\t{aRange[0]}\t{aRange[1]}\t\t{sRange[0]}\t{sRange[1]}\t\t");
+            }
+        }
+
         private static Dictionary<string, List<Workflow>> _workflows = new Dictionary<string, List<Workflow>>();
         private static List<Rating> _ratings = new List<Rating>();
         private static List<AcceptedKey> _keysWithAccept = new List<AcceptedKey>();
@@ -75,6 +95,7 @@ namespace Day19
         static void Part2()
         {
             ulong distinctCombo = 0;
+            var pathsBounds = new List<Bounds>();
 
             foreach (var keyAccept in _keysWithAccept)
             {
@@ -88,7 +109,9 @@ namespace Day19
                     // find an A before passing it on to Follow Acceptable Path
                     if (workflow[i].NextStep == "A")
                     {
-                        var combos = FollowAcceptablePath(workflow, i, keyAccept.Key);
+                        var bounds = FollowAcceptablePath(workflow, i, keyAccept.Key);
+                        pathsBounds.Add(bounds);
+                        var combos = bounds.GetCombinations();
                         Console.WriteLine($"Number of combinations for a path: {combos}");
 
                         distinctCombo += combos;
@@ -103,18 +126,20 @@ namespace Day19
             }
 
             Console.WriteLine($"Number of distinct combinations is: {distinctCombo}");
+            Console.WriteLine();
+
+            foreach (var bounds in pathsBounds)
+            {
+                bounds.PrintBounds();
+            }
         }
 
-        static ulong FollowAcceptablePath(List<Workflow> workflow, int index, string key)
+        static Bounds FollowAcceptablePath(List<Workflow> workflow, int index, string key)
         {
-            // index 0 is lower boundary, index 1 is upper boundary. Range is inclusive of both numbers
-            var xRange = new int[2] { 1, 4000 };
-            var mRange = new int[2] { 1, 4000 };
-            var aRange = new int[2] { 1, 4000 };
-            var sRange = new int[2] { 1, 4000 };
-
+            var bounds = new Bounds();
             bool startPointFound = false;
             bool firstStepDone = false;
+            string prevKey = "";
 
             while (!startPointFound)
             {
@@ -126,7 +151,7 @@ namespace Day19
                         // if it isn't an endpoint, there will be conditions that need to be satisfied.
                         // identify conditions to reduce the limits to get to A
                         if ((workflow[i].NextStep == "A" && !firstStepDone)
-                            || workflow[i].NextStep == key)
+                            || workflow[i].NextStep == prevKey)
                         {
                             // this condition had to be satisfied
 
@@ -136,12 +161,12 @@ namespace Day19
                                     if (workflow[i].IsGreater)
                                     {
                                         var newLowerBound = workflow[i].Value + 1;
-                                        if (newLowerBound > xRange[0]) xRange[0] = newLowerBound; 
+                                        if (newLowerBound > bounds.xRange[0]) bounds.xRange[0] = newLowerBound; 
                                     }
                                     else
                                     {
                                         var newUpperBound = workflow[i].Value - 1;
-                                        if (newUpperBound < xRange[1]) xRange[1] = newUpperBound; 
+                                        if (newUpperBound < bounds.xRange[1]) bounds.xRange[1] = newUpperBound; 
                                     }
                                     break;
 
@@ -149,12 +174,12 @@ namespace Day19
                                     if (workflow[i].IsGreater)
                                     {
                                         var newLowerBound = workflow[i].Value + 1;
-                                        if (newLowerBound > mRange[0]) mRange[0] = newLowerBound;
+                                        if (newLowerBound > bounds.mRange[0]) bounds.mRange[0] = newLowerBound;
                                     }
                                     else
                                     {
                                         var newUpperBound = workflow[i].Value - 1;
-                                        if (newUpperBound < mRange[1]) mRange[1] = newUpperBound;
+                                        if (newUpperBound < bounds.mRange[1]) bounds.mRange[1] = newUpperBound;
                                     }
                                     break;
 
@@ -162,12 +187,12 @@ namespace Day19
                                     if (workflow[i].IsGreater)
                                     {
                                         var newLowerBound = workflow[i].Value + 1;
-                                        if (newLowerBound > aRange[0]) aRange[0] = newLowerBound;
+                                        if (newLowerBound > bounds.aRange[0]) bounds.aRange[0] = newLowerBound;
                                     }
                                     else
                                     {
                                         var newUpperBound = workflow[i].Value - 1;
-                                        if (newUpperBound < aRange[1]) aRange[1] = newUpperBound;
+                                        if (newUpperBound < bounds.aRange[1]) bounds.aRange[1] = newUpperBound;
                                     }
                                     break;
 
@@ -175,12 +200,12 @@ namespace Day19
                                     if (workflow[i].IsGreater)
                                     {
                                         var newLowerBound = workflow[i].Value + 1;
-                                        if (newLowerBound > sRange[0]) sRange[0] = newLowerBound;
+                                        if (newLowerBound > bounds.sRange[0]) bounds.sRange[0] = newLowerBound;
                                     }
                                     else
                                     {
                                         var newUpperBound = workflow[i].Value - 1;
-                                        if (newUpperBound < sRange[1]) sRange[1] = newUpperBound;
+                                        if (newUpperBound < bounds.sRange[1]) bounds.sRange[1] = newUpperBound;
                                     }
                                     break;
                                 default:
@@ -199,12 +224,12 @@ namespace Day19
                                     if (workflow[i].IsGreater)
                                     {
                                         var newUpperBound = workflow[i].Value;
-                                        if (newUpperBound < xRange[1]) xRange[1] = newUpperBound;
+                                        if (newUpperBound < bounds.xRange[1]) bounds.xRange[1] = newUpperBound;
                                     }
                                     else
                                     {
                                         var newLowerBound = workflow[i].Value;
-                                        if (newLowerBound > xRange[0]) xRange[0] = newLowerBound;
+                                        if (newLowerBound > bounds.xRange[0]) bounds.xRange[0] = newLowerBound;
                                     }
                                     break;
 
@@ -212,12 +237,12 @@ namespace Day19
                                     if (workflow[i].IsGreater)
                                     {
                                         var newUpperBound = workflow[i].Value;
-                                        if (newUpperBound < mRange[1]) mRange[1] = newUpperBound;
+                                        if (newUpperBound < bounds.mRange[1]) bounds.mRange[1] = newUpperBound;
                                     }
                                     else
                                     {
                                         var newLowerBound = workflow[i].Value;
-                                        if (newLowerBound > mRange[0]) mRange[0] = newLowerBound;
+                                        if (newLowerBound > bounds.mRange[0]) bounds.mRange[0] = newLowerBound;
                                     }
                                     break;
 
@@ -225,12 +250,12 @@ namespace Day19
                                     if (workflow[i].IsGreater)
                                     {
                                         var newUpperBound = workflow[i].Value;
-                                        if (newUpperBound < aRange[1]) aRange[1] = newUpperBound;
+                                        if (newUpperBound < bounds.aRange[1]) bounds.aRange[1] = newUpperBound;
                                     }
                                     else
                                     {
                                         var newLowerBound = workflow[i].Value;
-                                        if (newLowerBound > aRange[0]) aRange[0] = newLowerBound;
+                                        if (newLowerBound > bounds.aRange[0]) bounds.aRange[0] = newLowerBound;
                                     }
                                     break;
 
@@ -238,12 +263,12 @@ namespace Day19
                                     if (workflow[i].IsGreater)
                                     {
                                         var newUpperBound = workflow[i].Value;
-                                        if (newUpperBound < sRange[1]) sRange[1] = newUpperBound;
+                                        if (newUpperBound < bounds.sRange[1]) bounds.sRange[1] = newUpperBound;
                                     }
                                     else
                                     {
                                         var newLowerBound = workflow[i].Value;
-                                        if (newLowerBound > sRange[0]) sRange[0] = newLowerBound;
+                                        if (newLowerBound > bounds.sRange[0]) bounds.sRange[0] = newLowerBound;
                                     }
                                     break;
                                 default:
@@ -271,6 +296,7 @@ namespace Day19
                             {
                                 workflow = item.Value;
                                 index = j;
+                                prevKey = key;
                                 key = item.Key;
                                 nextFound = true;
                                 break;
@@ -282,8 +308,7 @@ namespace Day19
                 }
             }
 
-            return (ulong)(xRange[1] - xRange[0] + 1) * (ulong)(mRange[1] - mRange[0] + 1) *
-                   (ulong)(aRange[1] - aRange[0] + 1) * (ulong)(sRange[1] - sRange[0] + 1);
+            return bounds;
         }
         
 
