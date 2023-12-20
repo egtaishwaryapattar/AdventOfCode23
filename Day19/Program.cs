@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.Design;
 using System.Drawing;
 using System.Globalization;
 using System.Numerics;
@@ -103,8 +104,8 @@ namespace Day19
 
                 // find the workflow entry for key
                 var workflow = _workflows[keyAccept.Key];
-
-                for (var i = workflow.Count - 1; i >= 0; i--)
+                
+                for (var i = 0; i < workflow.Count; i++)
                 {
                     // find an A before passing it on to Follow Acceptable Path
                     if (workflow[i].NextStep == "A")
@@ -278,6 +279,10 @@ namespace Day19
                             firstStepDone = true;
                         }
                     }
+                    else
+                    {
+                        firstStepDone = true;
+                    }
                 }
 
                 if (key == "in")
@@ -311,7 +316,6 @@ namespace Day19
             return bounds;
         }
         
-
         static void GetWorkflowsAndRatings(string[] lines)
         {
             var allWorkflowsFound = false;
