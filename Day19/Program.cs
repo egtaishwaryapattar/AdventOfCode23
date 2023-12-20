@@ -146,7 +146,8 @@ namespace Day19
 
                foreach (var workflow in workflows)
                {
-                   if (workflow.IsEndpoint)
+                   if (workflow.IsEndpoint
+                       || IsWorkflowConditionMet(rating, workflow))
                    {
                        if (workflow.NextStep == "R")
                        {
@@ -163,28 +164,6 @@ namespace Day19
                        {
                            key = workflow.NextStep;
                            break;
-                       }
-                   }
-                   else
-                   {
-                       if (IsWorkflowConditionMet(rating, workflow))
-                       {
-                           if (workflow.NextStep == "R")
-                           {
-                               endPointFound = true;
-                               break;
-                           }
-                           else if (workflow.NextStep == "A")
-                           {
-                               accepted = true;
-                               endPointFound = true;
-                               break;
-                           }
-                           else
-                           {
-                               key = workflow.NextStep;
-                               break;
-                           }
                        }
                    }
                }
