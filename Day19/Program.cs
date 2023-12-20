@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Globalization;
 using System.Numerics;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Day19
 {
@@ -29,21 +30,32 @@ namespace Day19
         {
             public bool IsEndpoint;
             public RatingType Rating;
-            public bool IsGreater;
+            public bool IsGreater;      // refers to the sign - won't find equals to
             public int Value;
             public string NextStep;
         }
 
+        private class AcceptedKey
+        {
+            public string Key;
+            public int Count;
+        }
+
         private static Dictionary<string, List<Workflow>> _workflows = new Dictionary<string, List<Workflow>>();
         private static List<Rating> _ratings = new List<Rating>();
+        private static List<AcceptedKey> _keysWithAccept = new List<AcceptedKey>();
 
         static void Main(string[] args)
         {
-            var filename = "PuzzleInput.txt";
+            var filename = "Test1.txt";
             var lines = File.ReadAllLines(filename);
 
             GetWorkflowsAndRatings(lines);
+            Part2();
+        }
 
+        static void Part1()
+        {
             var sumOfAcceptedWorkflows = 0;
             foreach (var rating in _ratings)
             {
@@ -59,6 +71,221 @@ namespace Day19
 
             Console.WriteLine($"Sum for all accepted rating = {sumOfAcceptedWorkflows}");
         }
+
+        static void Part2()
+        {
+            ulong distinctCombo = 0;
+
+            foreach (var keyAccept in _keysWithAccept)
+            {
+                var numAcceptsInKey = 0;
+
+                // find the workflow entry for key
+                var workflow = _workflows[keyAccept.Key];
+
+                for (var i = workflow.Count - 1; i >= 0; i--)
+                {
+                    // find an A before passing it on to Follow Acceptable Path
+                    if (workflow[i].NextStep == "A")
+                    {
+                        var combos = FollowAcceptablePath(workflow, i, keyAccept.Key);
+                        Console.WriteLine($"Number of combinations for a path: {combos}");
+
+                        distinctCombo += combos;
+                        numAcceptsInKey++;
+
+                        if (numAcceptsInKey == keyAccept.Count)
+                        {
+                            break; // move onto the next keyAccept in _keysWithAccept
+                        }
+                    }
+                }
+            }
+
+            Console.WriteLine($"Number of distinct combinations is: {distinctCombo}");
+        }
+
+        static ulong FollowAcceptablePath(List<Workflow> workflow, int index, string key)
+        {
+            // index 0 is lower boundary, index 1 is upper boundary. Range is inclusive of both numbers
+            var xRange = new int[2] { 1, 4000 };
+            var mRange = new int[2] { 1, 4000 };
+            var aRange = new int[2] { 1, 4000 };
+            var sRange = new int[2] { 1, 4000 };
+
+            bool startPointFound = false;
+            bool firstStepDone = false;
+
+            while (!startPointFound)
+            {
+                // find the conditions to get to this A
+                for (var i = index; i >= 0; i--)
+                {
+                    if (!workflow[i].IsEndpoint)
+                    {
+                        // if it isn't an endpoint, there will be conditions that need to be satisfied.
+                        // identify conditions to reduce the limits to get to A
+                        if ((workflow[i].NextStep == "A" && !firstStepDone)
+                            || workflow[i].NextStep == key)
+                        {
+                            // this condition had to be satisfied
+
+                            switch (workflow[i].Rating)
+                            {
+                                case RatingType.X:
+                                    if (workflow[i].IsGreater)
+                                    {
+                                        var newLowerBound = workflow[i].Value + 1;
+                                        if (newLowerBound > xRange[0]) xRange[0] = newLowerBound; 
+                                    }
+                                    else
+                                    {
+                                        var newUpperBound = workflow[i].Value - 1;
+                                        if (newUpperBound < xRange[1]) xRange[1] = newUpperBound; 
+                                    }
+                                    break;
+
+                                case RatingType.M:
+                                    if (workflow[i].IsGreater)
+                                    {
+                                        var newLowerBound = workflow[i].Value + 1;
+                                        if (newLowerBound > mRange[0]) mRange[0] = newLowerBound;
+                                    }
+                                    else
+                                    {
+                                        var newUpperBound = workflow[i].Value - 1;
+                                        if (newUpperBound < mRange[1]) mRange[1] = newUpperBound;
+                                    }
+                                    break;
+
+                                case RatingType.A:
+                                    if (workflow[i].IsGreater)
+                                    {
+                                        var newLowerBound = workflow[i].Value + 1;
+                                        if (newLowerBound > aRange[0]) aRange[0] = newLowerBound;
+                                    }
+                                    else
+                                    {
+                                        var newUpperBound = workflow[i].Value - 1;
+                                        if (newUpperBound < aRange[1]) aRange[1] = newUpperBound;
+                                    }
+                                    break;
+
+                                case RatingType.S:
+                                    if (workflow[i].IsGreater)
+                                    {
+                                        var newLowerBound = workflow[i].Value + 1;
+                                        if (newLowerBound > sRange[0]) sRange[0] = newLowerBound;
+                                    }
+                                    else
+                                    {
+                                        var newUpperBound = workflow[i].Value - 1;
+                                        if (newUpperBound < sRange[1]) sRange[1] = newUpperBound;
+                                    }
+                                    break;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+
+                            firstStepDone = true; // in the pathway to 'in' if we encounter any other conditions for A, we want them to be false
+                        }
+                        else
+                        {
+                            // this condition is not met
+
+                            switch (workflow[i].Rating)
+                            {
+                                case RatingType.X:
+                                    if (workflow[i].IsGreater)
+                                    {
+                                        var newUpperBound = workflow[i].Value;
+                                        if (newUpperBound < xRange[1]) xRange[1] = newUpperBound;
+                                    }
+                                    else
+                                    {
+                                        var newLowerBound = workflow[i].Value;
+                                        if (newLowerBound > xRange[0]) xRange[0] = newLowerBound;
+                                    }
+                                    break;
+
+                                case RatingType.M:
+                                    if (workflow[i].IsGreater)
+                                    {
+                                        var newUpperBound = workflow[i].Value;
+                                        if (newUpperBound < mRange[1]) mRange[1] = newUpperBound;
+                                    }
+                                    else
+                                    {
+                                        var newLowerBound = workflow[i].Value;
+                                        if (newLowerBound > mRange[0]) mRange[0] = newLowerBound;
+                                    }
+                                    break;
+
+                                case RatingType.A:
+                                    if (workflow[i].IsGreater)
+                                    {
+                                        var newUpperBound = workflow[i].Value;
+                                        if (newUpperBound < aRange[1]) aRange[1] = newUpperBound;
+                                    }
+                                    else
+                                    {
+                                        var newLowerBound = workflow[i].Value;
+                                        if (newLowerBound > aRange[0]) aRange[0] = newLowerBound;
+                                    }
+                                    break;
+
+                                case RatingType.S:
+                                    if (workflow[i].IsGreater)
+                                    {
+                                        var newUpperBound = workflow[i].Value;
+                                        if (newUpperBound < sRange[1]) sRange[1] = newUpperBound;
+                                    }
+                                    else
+                                    {
+                                        var newLowerBound = workflow[i].Value;
+                                        if (newLowerBound > sRange[0]) sRange[0] = newLowerBound;
+                                    }
+                                    break;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+
+                            firstStepDone = true;
+                        }
+                    }
+                }
+
+                if (key == "in")
+                {
+                    startPointFound = true;
+                }
+                else
+                {
+                    // find the next workflow, key and index value
+                    foreach (var item in _workflows)
+                    {
+                        var nextFound = false;
+                        for (var j = 0; j < item.Value.Count; j++)
+                        {
+                            if (item.Value[j].NextStep == key)
+                            {
+                                workflow = item.Value;
+                                index = j;
+                                key = item.Key;
+                                nextFound = true;
+                                break;
+                            }
+                        }
+
+                        if (nextFound) break;
+                    }
+                }
+            }
+
+            return (ulong)(xRange[1] - xRange[0] + 1) * (ulong)(mRange[1] - mRange[0] + 1) *
+                   (ulong)(aRange[1] - aRange[0] + 1) * (ulong)(sRange[1] - sRange[0] + 1);
+        }
+        
 
         static void GetWorkflowsAndRatings(string[] lines)
         {
@@ -89,19 +316,28 @@ namespace Day19
                                 // is a sequence
                                 var seq = workflow.Split(':');
                                 var condition = seq[0];
+                                var nextStep = seq[1];
                                 workflows.Add(new Workflow()
                                 {
                                     IsEndpoint = false,
                                     Rating = GetRatingType(condition[0]),
                                     IsGreater = condition[1] == '>',
                                     Value = Convert.ToInt16(condition.Substring(2, seq[0].Length - 2)),
-                                    NextStep = seq[1],
+                                    NextStep = nextStep,
                                 });
 
+                                if (nextStep == "A")
+                                {
+                                    AddKeyAsAcceptableRoute(key);
+                                }
                             }
                             else
                             {
                                 workflows.Add(new Workflow(){ IsEndpoint = true, NextStep = workflow});
+                                if (workflow == "A")
+                                {
+                                    AddKeyAsAcceptableRoute(key);
+                                }
                             }
                         }
 
@@ -122,6 +358,23 @@ namespace Day19
                         S = Convert.ToInt16((values[3].Split('='))[1])
                     });
                 }
+            }
+        }
+
+        static void AddKeyAsAcceptableRoute(string key)
+        {
+            var keyFound = false;
+
+            foreach (var acceptedKey in _keysWithAccept.Where(acceptedKey => acceptedKey.Key == key))
+            {
+                keyFound = true;
+                acceptedKey.Count++;
+                break;
+            }
+
+            if (!keyFound)
+            {
+                _keysWithAccept.Add(new AcceptedKey() {Key = key, Count = 1});
             }
         }
 
