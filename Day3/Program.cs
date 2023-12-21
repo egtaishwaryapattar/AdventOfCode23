@@ -14,18 +14,7 @@ namespace Day3
             var lines = File.ReadAllLines(filename);
 
             ConvertLinesToMatrix(lines);
-
-            var partNumbers = FindPartNumbers();
-
-            var sum = 0;
-            foreach (var part in partNumbers)
-            {
-                sum += part;
-            }
-
-            Console.WriteLine($"Sum of part numbers is {sum}");
-
-            // answer is greater than 530822
+            Part2();
         }
 
         static void ConvertLinesToMatrix(string[] lines)
@@ -42,6 +31,58 @@ namespace Day3
                     _matrix[row, col] = (lines[row])[col];
                 }
             }
+        }
+
+        static void Part1()
+        {
+            var partNumbers = FindPartNumbers();
+
+            var sum = 0;
+            foreach (var part in partNumbers)
+            {
+                sum += part;
+            }
+
+            Console.WriteLine($"Sum of part numbers is {sum}");
+        }
+
+        static void Part2()
+        {
+            var gearRatios = GetGearRatios();
+            var sum = 0;
+            foreach (var ratio in gearRatios)
+            {
+                sum += ratio;
+            }
+
+            Console.WriteLine($"Sum of part numbers is {sum}");
+        }
+
+        static List<int> GetGearRatios()
+        {
+            var gearRatios = new List<int>();
+            
+            var numRows = _matrix.GetLength(0);
+            var numCols = _matrix.GetLength(1);
+
+            for (var row = 0; row < numRows; row++)
+            {
+                for (var col = 0; col < numCols; col++)
+                {
+                    if (_matrix[row, col] == '*')
+                    {
+                        var surroundingNumbers = GetSurroundingPartNumbers(row, col);
+
+                        if (surroundingNumbers.Count == 2)
+                        {
+                            var gearRatio = surroundingNumbers[0] * surroundingNumbers[1];
+                            gearRatios.Add(gearRatio);
+                        }
+                    }
+                }
+            }
+
+            return gearRatios;
         }
 
         static List<int> FindPartNumbers()
@@ -210,6 +251,183 @@ namespace Day3
             }
 
             return false;
+        }
+
+        static List<int> GetSurroundingPartNumbers(int row, int col)
+        {
+            var numRows = _matrix.GetLength(0);
+            var numCols = _matrix.GetLength(1);
+            var partNums = new List<int>();
+
+            // check top row for number(s)
+            if (row - 1 >= 0)
+            {
+                var nums = GetNumberInRow(row - 1, col);
+                if (nums.Count != 0)
+                {
+                    partNums.AddRange(nums);
+                }
+            }
+
+            // check left for number
+            if (col - 1 >= 0)
+            {
+                if (IsDigit(_matrix[row, col - 1]))
+                {
+                    var value = GetNumberToLeftOfDigit(row, col - 1);
+                    partNums.Add(value);
+                }
+            }
+
+            // check right for number
+            if (col + 1 < numCols)
+            {
+                if (IsDigit(_matrix[row, col + 1]))
+                {
+                    var value = GetNumberToRightOfDigit(row, col + 1);
+                    partNums.Add(value);
+                }
+            }
+
+            // check bottom row for number(s)
+            if (row + 1 < numRows)
+            {
+                var nums = GetNumberInRow(row + 1, col);
+                if (nums.Count != 0)
+                {
+                    partNums.AddRange(nums);
+                }
+            }
+
+            return partNums;
+        }
+
+        static int GetValueForChars(List<char> chars)
+        {
+            var sb = new StringBuilder();
+            foreach (var c in chars)
+            {
+                sb.Append(c);
+            }
+
+            return Convert.ToInt16(sb.ToString());
+        }
+
+        // row and col refer to position to start from
+        static int GetNumberToRightOfDigit(int row, int col)
+        {
+            var numCols = _matrix.GetLength(1);
+            var c = _matrix[row, col];
+            var chars = new List<char> { c };
+
+            if (col + 1 < numCols)
+            {
+                var b = _matrix[row, col + 1];
+                if (IsDigit(b))
+                {
+                    chars.Add(b);
+                    if (col + 2 < numCols)
+                    {
+                        var a = _matrix[row, col + 2];
+                        if (IsDigit(a))
+                        {
+                            chars.Add(a);
+                        }
+                    }
+                }
+            }
+            return GetValueForChars(chars);
+        }
+
+        static int GetNumberToLeftOfDigit(int row, int col)
+        {
+            var c = _matrix[row, col];
+            var chars = new List<char> { c };
+            if (col - 1 >= 0)
+            {
+                var b = _matrix[row, col - 1];
+                if (IsDigit(b))
+                {
+                    chars.Add(b);
+                    if (col - 2 >= 0)
+                    {
+                        var a = _matrix[row, col - 2];
+                        if (IsDigit(a))
+                        {
+                            chars.Add(a);
+                        }
+                    }
+                }
+            }
+            chars.Reverse();
+            return GetValueForChars(chars);
+        }
+
+        static List<int> GetNumberInRow(int row, int middleCol)
+        {
+            bool leftIsDigit = false;
+            bool middleIsDigit = IsDigit(_matrix[row,middleCol]);
+            bool rightIsDigit = false;
+
+            if (middleCol - 1 >= 0)
+            {
+                leftIsDigit = IsDigit(_matrix[row, middleCol - 1]);
+            }
+
+            if (middleCol + 1 < _matrix.GetLength(1))
+            {
+                rightIsDigit = IsDigit(_matrix[row, middleCol + 1]);
+            }
+
+            // if all 3 are digits, they make up a number
+            if (leftIsDigit && middleIsDigit && rightIsDigit)
+            {
+                var chars = new List<char>
+                {
+                    _matrix[row, middleCol - 1],
+                    _matrix[row, middleCol],
+                    _matrix[row, middleCol + 1]
+                };
+                var value = GetValueForChars(chars);
+                return new List<int> { value };
+            }
+
+            // if there is one number on the left
+            if (leftIsDigit && middleIsDigit && !rightIsDigit)
+            {
+                var value = GetNumberToLeftOfDigit(row, middleCol);
+                return new List<int> { value }; 
+            }
+
+            // if there is one number on the right
+            if (!leftIsDigit && middleIsDigit && rightIsDigit)
+            {
+                var value = GetNumberToRightOfDigit(row, middleCol);
+                return new List<int> { value };
+            }
+
+            // there could be a number just in the middle
+            if (!leftIsDigit && middleIsDigit && !rightIsDigit)
+            {
+                return new List<int>() { Convert.ToInt16((_matrix[row, middleCol]).ToString()) };
+            }
+
+            // or there could be a number of the left and/or right
+            var numbers = new List<int>();
+
+            if (leftIsDigit)
+            {
+                var value = GetNumberToLeftOfDigit(row, middleCol - 1);
+                numbers.Add(value);
+            }
+
+            if (rightIsDigit)
+            {
+                var value = GetNumberToRightOfDigit(row, middleCol + 1);
+                numbers.Add(value);
+            }
+
+            return numbers;
         }
     }
 }
