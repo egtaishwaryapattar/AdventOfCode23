@@ -19,23 +19,22 @@ namespace Day18
         {
             public Direction Direction;
             public Tuple<int, int> Position; // relative position
-            public Color Colour;
             public bool IsBoundary;
         }
 
         static void Main(string[] args)
         {
-            var filename = "PuzzleInput.txt";
+            var filename = "Test1.txt";
             var lines = File.ReadAllLines(filename);
 
-            var trenches = GetTrenches(lines);
+            var trenches = GetTrenchesPart2(lines);
             Console.WriteLine($"Size of trench dug up is {trenches.Count}");
 
             trenches = DigUpTrenchInterior(trenches, true);
             Console.WriteLine($"Size of trench dug up is {trenches.Count}");
         }
 
-        static List<Trench> GetTrenches(string[] lines)
+        static List<Trench> GetTrenchesPart1(string[] lines)
         {
             var trenches = new List<Trench>();
 
@@ -65,19 +64,55 @@ namespace Day18
                         throw new Exception("Invalid direction");
                         break;
                 }
+                
+                for (var i = 0; i < Convert.ToInt16(splitString[1]); i++)
+                {
+                    position = GetNextPosition(position, direction);
+                    trenches.Add(new Trench(){ Direction = direction, Position = position, IsBoundary = true});
+                }
+            }
 
-                var numSteps = Convert.ToInt16(splitString[1]);
+            return trenches;
+        }
+
+        static List<Trench> GetTrenchesPart2(string[] lines)
+        {
+            var trenches = new List<Trench>();
+
+            // start the position from 0,0. should also be the end position
+            var position = Tuple.Create(0, 0);
+
+            foreach (var line in lines)
+            {
+                var splitString = line.Split(' ');
 
                 var colourString = (splitString[2]).Substring(2, 6);
-                var red = Int32.Parse(colourString.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
-                var green = Int32.Parse(colourString.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
-                var blue = Int32.Parse(colourString.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
-                var colour = Color.FromArgb(red, green, blue);
+                var numSteps = Int32.Parse(colourString.Substring(0, 5), System.Globalization.NumberStyles.HexNumber);
 
+                Direction direction;
+                switch (colourString[5])
+                {
+                    case '0':
+                        direction = Direction.Right;
+                        break;
+                    case '2':
+                        direction = Direction.Left;
+                        break;
+                    case '3':
+                        direction = Direction.Up;
+                        break;
+                    case '1':
+                        direction = Direction.Down;
+                        break;
+                    default:
+                        throw new Exception("Invalid direction");
+                        break;
+                }
+                
                 for (var i = 0; i < numSteps; i++)
                 {
                     position = GetNextPosition(position, direction);
-                    trenches.Add(new Trench(){Colour = colour, Direction = direction, Position = position, IsBoundary = true});
+                    trenches.Add(new Trench() { Direction = direction, Position = position, IsBoundary = true });
                 }
             }
 
@@ -200,6 +235,7 @@ namespace Day18
                     && trench.Position.Item2 == col)
                 {
                     exists = true;
+                    break;
                 }
             }
 

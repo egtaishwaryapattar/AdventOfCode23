@@ -68,7 +68,7 @@ namespace Day19
 
         static void Main(string[] args)
         {
-            var filename = "Test1.txt";
+            var filename = "PuzzleInput.txt";
             var lines = File.ReadAllLines(filename);
 
             GetWorkflowsAndRatings(lines);
@@ -113,7 +113,7 @@ namespace Day19
                         var bounds = FollowAcceptablePath(workflow, i, keyAccept.Key);
                         pathsBounds.Add(bounds);
                         var combos = bounds.GetCombinations();
-                        Console.WriteLine($"Number of combinations for a path: {combos}");
+                        //Console.WriteLine($"Number of combinations for a path: {combos}");
 
                         distinctCombo += combos;
                         numAcceptsInKey++;
